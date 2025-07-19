@@ -1,6 +1,11 @@
-flax>=0.10.0
-jax>=0.6.0
-jaxlib>=0.6.0
-optax>=0.2.0
-numpy>=1.23.0
-matplotlib>=3.5.0 
+# Core dependencies for neuroplasticity experiments
+flax>=0.7.3
+jax>=0.4.13
+jaxlib>=0.4.13
+optax>=0.1.7
+numpy>=1.21.0
+matplotlib>=3.5.0
+
+# Optional: for advanced NNX features (requires Python 3.10+)
+# flax>=0.10.0  # Uncomment for NNX support
+# jax>=0.4.27   # Uncomment for NNX support 
