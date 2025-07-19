@@ -16,22 +16,15 @@ import optax
 from flax import linen as nn
 from flax.core import freeze, unfreeze
 
-# Set random seed for reproducibility
-jax.config.update('jax_default_prng_impl', 'unsafe_rbg')
-np.random.seed(42)
+# Import utility functions
+from utils import (
+    generate_data, dataset, calculate_plasticity_metrics, create_optimizer,
+    print_training_header, print_training_step, print_final_results,
+    setup_random_seed, create_plasticity_config, validate_plasticity_config
+)
 
-def generate_data(n_samples=1000, input_dim=10, output_dim=1):
-    """Generate synthetic data for training."""
-    X = np.random.normal(0, 1, (n_samples, input_dim))
-    Y = np.sum(X**2, axis=1, keepdims=True) + np.random.normal(0, 0.1, (n_samples, output_dim))
-    return X, Y
-
-def dataset(X, Y, batch_size=32):
-    """Generate batches of data."""
-    n_samples = len(X)
-    while True:
-        indices = np.random.choice(n_samples, size=batch_size, replace=False)
-        yield X[indices], Y[indices]
+# Set up random seed
+setup_random_seed(42)
 
 class PlasticLinear(nn.Module):
     """
@@ -192,6 +185,12 @@ def main():
     print("🧠 Neuroplasticity in Flax - Simple Version")
     print("=" * 50)
     
+    # Create plasticity configuration
+    config = create_plasticity_config(plasticity_rate=0.01, target_activity=1.0, scaling_factor=0.001)
+    if not validate_plasticity_config(config):
+        print("❌ Invalid plasticity configuration!")
+        return
+    
     # Generate data
     print("📊 Generating synthetic data...")
     X, Y = generate_data(n_samples=1000, input_dim=10, output_dim=1)
@@ -220,14 +219,12 @@ def main():
     
     # Create optimizer
     global optimizer
-    optimizer = optax.adam(learning_rate=0.001)
+    optimizer = create_optimizer(learning_rate=0.001, optimizer_type='adam')
     optimizer_state = optimizer.init(params)
     
     print("✅ Neuroplastic model initialized successfully")
     print("📈 Starting training with plasticity monitoring...")
-    print("-" * 70)
-    print(f"{'Step':<6} {'Loss':<12} {'Hebbian':<12} {'Structural':<12} {'Scaling':<12} {'Activity':<12}")
-    print("-" * 70)
+    print_training_header()
     
     # Training loop
     data_gen = dataset(X, Y, batch_size=32)
@@ -239,21 +236,11 @@ def main():
         # Evaluation with plasticity metrics
         if step % 2 == 0:
             metrics = eval_step(params, variables, (X, Y))
-            print(f"{step:2d}    {metrics['loss']:10.6f} {metrics['hebbian_activity']:10.6f} "
-                  f"{metrics['structural_plasticity']:10.6f} {metrics['synaptic_scaling']:10.6f} "
-                  f"{metrics['neural_activity']:10.6f}")
-    
-    print("-" * 70)
-    print("🎉 Neuroplasticity training completed!")
+            print_training_step(step, metrics['loss'], metrics)
     
     # Final evaluation
     final_metrics = eval_step(params, variables, (X, Y))
-    print(f"📊 Final loss: {final_metrics['loss']:.6f}")
-    print(f"🧠 Final plasticity metrics:")
-    print(f"   - Hebbian activity: {final_metrics['hebbian_activity']:.6f}")
-    print(f"   - Structural plasticity: {final_metrics['structural_plasticity']:.6f}")
-    print(f"   - Synaptic scaling: {final_metrics['synaptic_scaling']:.6f}")
-    print(f"   - Neural activity: {final_metrics['neural_activity']:.6f}")
+    print_final_results(final_metrics['loss'], final_metrics)
     
     # Test prediction
     test_input = np.random.normal(0, 1, (5, input_dim))
